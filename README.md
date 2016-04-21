@@ -1,3 +1,35 @@
+# SQLCipher with WinRT fix
+
+## WinRT fix
+
+A small fix to `src/crypto_impl.c` to enable build in WinRT environments such as Windows 8.1/Windows Phone 8.1/Windows 10, as needed by [litehelpers / Cordova-sqlcipher-adapter](https://github.com/litehelpers/Cordova-sqlcipher-adapter):
+
+```diff
+--- a/src/crypto_impl.c
++++ b/src/crypto_impl.c
+@@ -1210,10 +1210,16 @@ int sqlcipher_cipher_profile(sqlite3 *db, const char *destination){
+   }else if( strcmp(destination, "off")==0 ){
+     f = 0;
+   }else{
++#ifdef SQLITE_OS_WINRT
++    if( fopen_s(&f, destination, "wb")!=0 ){
++      return SQLITE_ERROR;
++    }
++#else
+     f = fopen(destination, "wb");
+     if( f==0 ){
+       return SQLITE_ERROR;
+     }
++#endif
+   }
+   sqlite3_profile(db, sqlcipher_profile_callback, f);
+   return SQLITE_OK;
+```
+
+This does *not* have any affect on the build for other platform versions such as iOS.
+
+**NOTE:** [@brodybits](https://github.com/brodybits) raised this fix (using `#ifdef SQLITE_CODEC_SAFE_OPEN` in [sqlcipher/sqlcipher#168](https://github.com/sqlcipher/sqlcipher/pull/168). If [sqlcipher/sqlcipher#168](https://github.com/sqlcipher/sqlcipher/pull/168) is accepted than this fork can go away.
+
 ## SQLCipher
 
 SQLCipher is an SQLite extension that provides transparent 256-bit AES encryption of 
